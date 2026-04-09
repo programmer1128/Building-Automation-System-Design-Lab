@@ -1,0 +1,14 @@
+/* 
+   index.css -> Master stylesheet manifest
+   Import order matters: variables must come first so all
+   subsequent files can reference the CSS custom properties. */
+
+@import './variables.css';   /* :root tokens & body reset   */
+@import './layout.css';      /* app-container, main-area    */
+@import './sidebar.css';     /* sidebar, brand, nav-item    */
+@import './cards.css';       /* card, kpi-grid              */
+@import './devices.css';     /* device-grid, status-badge   */
+@import './tables.css';      /* logs table                  */
+@import './alerts.css';      /* threat-panel, system-status */
+@import './animations.css';  /* @keyframes, .spin           */
+@import './scrollbar.css';   /* ::-webkit-scrollbar         */
