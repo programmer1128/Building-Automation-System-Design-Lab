@@ -1,8 +1,13 @@
 import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+
+DROIDCAM_URL = {
+    'camera2': "http://10.168.237.131:4747/video",
+    'camera1': "http://10.168.237.163:81/stream"
+}
 
 app = FastAPI()
 
@@ -24,7 +29,19 @@ logger = logging.getLogger(__name__)
 
 logger.info("CWD: " + os.getcwd())
 
-@app.get("/")
-def root():
-    logger.info("API endpoint / hit")
-    return {"message": "Hello there!"}
+@app.websocket("/ws/stream/{cam_id}")
+async def websocket_endpoint(websocket: WebSocket, cam_id: str):
+    await websocket.accept()
+
+    target_url = DROIDCAM_URL.get(cam_id)
+    if not target_url:
+        await websocket.close(code=1008)
+        return
+    try:
+        while True:
+            await websocket.send_text(f"Connected to {cam_id}")
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        logger.info(f"Client disconnected from {cam_id}")
+    except Exception as e:
+        logger.error(f"Error: {e}")
