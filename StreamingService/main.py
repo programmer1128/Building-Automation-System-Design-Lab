@@ -48,7 +48,8 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
     async with httpx.AsyncClient() as client:
         try:
             async with client.stream("GET", target_url, timeout=None) as response:
-                logger.info(f"Connected to {cam_id}")")     
+                async for chunk in response.aiter_bytes():
+                    buffer += chunk
         except WebSocketDisconnect:
             logger.info(f"Client disconnected from {cam_id}")
         except Exception as e:
