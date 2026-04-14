@@ -50,6 +50,13 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
             async with client.stream("GET", target_url, timeout=None) as response:
                 async for chunk in response.aiter_bytes():
                     buffer += chunk
+                    
+                    start = buffer.find(b'\xff\xd8') # JPEG Start
+                    end = buffer.find(b'\xff\xd9')   # JPEG End
+
+                    if start != -1 and end != -1 and end > start:
+                        jpg_data = buffer[start:end + 2]
+                        buffer = buffer[end + 2:]    # Advance buffer
         except WebSocketDisconnect:
             logger.info(f"Client disconnected from {cam_id}")
         except Exception as e:
