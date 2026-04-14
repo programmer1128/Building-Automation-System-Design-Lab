@@ -1,11 +1,15 @@
 import logging
 import os
 
+import httpx
+import cv2
+import numpy as np
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 DROIDCAM_URL = {
-    'camera2': "http://10.168.237.131:4747/video",
+    'camera2': "http://192.168.0.116:4747/video",
     'camera1': "http://10.168.237.163:81/stream"
 }
 
@@ -37,11 +41,15 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
     if not target_url:
         await websocket.close(code=1008)
         return
-    try:
-        while True:
-            await websocket.send_text(f"Connected to {cam_id}")
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        logger.info(f"Client disconnected from {cam_id}")
-    except Exception as e:
-        logger.error(f"Error: {e}")
+
+    frame_count = 0
+    buffer = b""
+
+    async with httpx.AsyncClient() as client:
+        try:
+            async with client.stream("GET", target_url, timeout=None) as response:
+                logger.info(f"Connected to {cam_id}")")     
+        except WebSocketDisconnect:
+            logger.info(f"Client disconnected from {cam_id}")
+        except Exception as e:
+            logger.error(f"Error: {e}")
