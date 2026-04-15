@@ -57,7 +57,16 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
                     if start != -1 and end != -1 and end > start:
                         jpg_data = buffer[start:end + 2]
                         buffer = buffer[end + 2:]    # Advance buffer
+
+                        if jpg_data:
+                            frame_count += 1
+                            await websocket.send_bytes(jpg_data) # Send frame to browser
+
+                    # Emergency buffer clear (5MB limit)
+                    if len(buffer) > 5 * 1024 * 1024:
+                        buffer = b""
+        
         except WebSocketDisconnect:
-            logger.info(f"Client disconnected from {cam_id}")
+            logger.info(f"Client disconnected from {cam_id} with frame count {frame_count}")
         except Exception as e:
             logger.error(f"Error: {e}")
