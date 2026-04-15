@@ -4,6 +4,7 @@ import os
 import httpx
 import cv2
 import numpy as np
+import mediapipe as mp
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +33,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 logger.info("CWD: " + os.getcwd())
+
+model_path = 'blaze_face_short_range.tflite'
+BaseOptions = mp.tasks.BaseOptions
+FaceDetector = mp.tasks.vision.FaceDetector
+FaceDetectorOptions = mp.tasks.vision.FaceDetectorOptions
+
+options = FaceDetectorOptions(
+    base_options=BaseOptions(model_asset_path=model_path),
+    running_mode=mp.tasks.vision.RunningMode.IMAGE
+)
+detector = FaceDetector.create_from_options(options)
 
 @app.websocket("/ws/stream/{cam_id}")
 async def websocket_endpoint(websocket: WebSocket, cam_id: str):
