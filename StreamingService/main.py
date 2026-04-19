@@ -43,7 +43,22 @@ options = FaceDetectorOptions(
     base_options=BaseOptions(model_asset_path=model_path),
     running_mode=mp.tasks.vision.RunningMode.IMAGE
 )
+
+if options:
+    logger.info("Successfully loaded blaze face detection model")
+
 detector = FaceDetector.create_from_options(options)
+
+def process_frame():
+    rgb_frame = cv2.cvtColor(raw_frame, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+
+    detection_result = detector.detect(mp_image)
+    success, encoded_img = cv2.imencode('.jpg', raw_frame)
+    if not success:
+        return b""
+
+    return encoded_img.tobytes()
 
 @app.websocket("/ws/stream/{cam_id}")
 async def websocket_endpoint(websocket: WebSocket, cam_id: str):
@@ -70,9 +85,21 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
                         jpg_data = buffer[start:end + 2]
                         buffer = buffer[end + 2:]    # Advance buffer
 
-                        if jpg_data:
-                            frame_count += 1
-                            await websocket.send_bytes(jpg_data) # Send frame to browser
+                        if not jpg_data:
+                            continue
+
+                        # Decode the binary JPEG into a CV2-accessible array
+                        nparr = np.frombuffer(jpg_data, np.uint8)
+                        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+                        if frame is not None:
+                            # Call our new processing skeleton
+                            processed_bytes = process_frame(frame)
+
+                            if processed_bytes:
+                                await websocket.send_bytes(processed_bytes)
+                                await asyncio.sleep(0.01) # Small sleep for stability
+
 
                     # Emergency buffer clear (5MB limit)
                     if len(buffer) > 5 * 1024 * 1024:
