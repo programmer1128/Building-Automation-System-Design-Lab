@@ -51,10 +51,14 @@ if options:
 detector = FaceDetector.create_from_options(options)
 
 def process_frame(raw_frame: np.ndarray) -> bytes:
+    """
+    Converts raw frame to rgb frame, runs the detection model on it, returns the processed image.
+    """
     rgb_frame = cv2.cvtColor(raw_frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
     detection_result = detector.detect(mp_image)
+    # TODO: Draw rectangles around detected faces
     success, encoded_img = cv2.imencode('.jpg', raw_frame)
     if not success:
         return b""
@@ -71,6 +75,7 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
         return
 
     frame_count = 0
+    # buffer to accumulate MJPEG frames
     buffer = b""
 
     async with httpx.AsyncClient() as client:
@@ -79,6 +84,7 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
                 async for chunk in response.aiter_bytes():
                     buffer += chunk
                     
+                    # Slice along JPEG markers
                     start = buffer.find(b'\xff\xd8') # JPEG Start
                     end = buffer.find(b'\xff\xd9')   # JPEG End
 
