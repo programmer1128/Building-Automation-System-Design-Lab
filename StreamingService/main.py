@@ -1,5 +1,6 @@
 import logging
 import os
+import asyncio
 
 import httpx
 import cv2
@@ -49,7 +50,7 @@ if options:
 
 detector = FaceDetector.create_from_options(options)
 
-def process_frame():
+def process_frame(raw_frame: np.ndarray) -> bytes:
     rgb_frame = cv2.cvtColor(raw_frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
