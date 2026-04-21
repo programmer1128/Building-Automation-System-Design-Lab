@@ -32,6 +32,7 @@ import com.automationSystem.system.service.ParserService;
 @CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.GET, RequestMethod.OPTIONS})
 public class AdminController 
 {
+     //autowired to enable spring create instances
      @Autowired
      AdminService adminService;
 
