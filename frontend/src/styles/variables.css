@@ -1,0 +1,22 @@
+:root {
+  --bg-dark: #0b1120;       /* Deepest Blue-Black */
+  --bg-panel: #1e293b;      /* Panel Background */
+  --bg-card: #334155;       /* Card Background */
+  --text-primary: #f1f5f9;  /* White-ish */
+  --text-secondary: #94a3b8; /* Muted Blue-Grey */
+
+  --signal-green: #10b981;  /* Safe */
+  --signal-yellow: #f59e0b; /* Warning */
+  --signal-red: #ef4444;    /* Critical */
+  --signal-blue: #3b82f6;   /* Info */
+
+  --grid-line: #334155;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  overflow: hidden;
+}
