@@ -10,6 +10,7 @@ PubSubClient client(espClient);
 
 void setup() {
   // MUST match the Arduino's espSerial.begin(9600)
+  //MATCH BAUDRATE
   Serial.begin(9600); 
   
   WiFiManager wifiManager;
