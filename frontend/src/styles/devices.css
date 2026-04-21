@@ -1,0 +1,51 @@
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.device-card {
+  background-color: var(--bg-panel);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.device-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.device-card.breakdown {
+  border: 2px solid var(--signal-red);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  animation: pulse-border 1s infinite;
+}
+
+.device-card.spike {
+  border: 2px solid #eab308;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+}
+
+.device-card.anomaly {
+  border: 2px solid #f97316;
+}
+
+.device-card.normal {
+  border-top: 4px solid var(--signal-green);
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+  float: right;
+}
+
+.status-badge.crit { background: rgba(239, 68, 68, 0.2);  color: var(--signal-red);    }
+.status-badge.warn { background: rgba(245, 158, 11, 0.2); color: var(--signal-yellow); }
+.status-badge.ok   { background: rgba(16, 185, 129, 0.2); color: var(--signal-green);  }
