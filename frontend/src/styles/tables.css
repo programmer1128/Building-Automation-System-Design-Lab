@@ -1,0 +1,22 @@
+.logs-table-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  color: var(--text-secondary);
+  padding: 12px;
+  border-bottom: 1px solid var(--grid-line);
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+}
