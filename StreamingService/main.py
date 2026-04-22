@@ -59,6 +59,20 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
 
     detection_result = detector.detect(mp_image)
     # TODO: Draw rectangles around detected faces
+    if detection_result.detections:
+        for detection in detection_result.detections:
+            bbox = detection.bounding_box
+            
+            # Extract x, y, width, and height as integers
+            x = int(bbox.origin_x)
+            y = int(bbox.origin_y)
+            w = int(bbox.width)
+            h = int(bbox.height)
+
+            # Boundary safety: Prevent negative coordinates if face is at the edge
+            x, y = max(0, x), max(0, y)
+            print(f'x: {x}, y: {y}')
+
     success, encoded_img = cv2.imencode('.jpg', raw_frame)
     if not success:
         return b""
