@@ -58,8 +58,17 @@ path = "known_faces"
 
 if os.path.exists(path):
     logger.info(f"Directory exists!")
+    for file in os.listdir(path):
+        if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+            img = face_recognition.load_image_file(os.path.join(path, file))
+            encodings = face_recognition.face_encodings(img)
+            if encodings:
+                known_face_encodings.append(encodings[0])
+                known_face_names.append(os.path.splitext(file)[0])
 else:
     logger.info(f"Warning: Directory {path} not found.\n")
+
+logger.info(known_face_names)
 
 def process_frame(raw_frame: np.ndarray) -> bytes:
     """
