@@ -15,6 +15,9 @@ DROIDCAM_URL = {
     'camera2': "http://192.168.0.116:4747/video",
     'camera1': "http://10.168.237.163:81/stream"
 }
+MODEL_DIR = "models/"
+FACE_DET_MODELS = ["blaze_face_short_range.tflite", "blaze_face_full_range.tflite", "blaze_face_full_range_sparse.tflite"]
+FACE_DET_MODEL_DIRS = list(map(lambda x: MODEL_DIR + x, FACE_DET_MODELS))
 
 app = FastAPI()
 
@@ -36,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 logger.info("CWD: " + os.getcwd())
 
-model_path = 'blaze_face_short_range.tflite'
+model_path = FACE_DET_MODEL_DIRS[0]
 BaseOptions = mp.tasks.BaseOptions
 FaceDetector = mp.tasks.vision.FaceDetector
 FaceDetectorOptions = mp.tasks.vision.FaceDetectorOptions
