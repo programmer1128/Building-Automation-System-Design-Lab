@@ -6,6 +6,7 @@ import httpx
 import cv2
 import numpy as np
 import mediapipe as mp
+import face_recognition
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,6 +50,16 @@ if options:
     logger.info("Successfully loaded blaze face detection model")
 
 detector = FaceDetector.create_from_options(options)
+
+# Face recognition in the works
+known_face_encodings = []
+known_face_names = []
+path = "known_faces"
+
+if os.path.exists(path):
+    logger.info(f"Directory exists!")
+else:
+    logger.info(f"Warning: Directory {path} not found.\n")
 
 def process_frame(raw_frame: np.ndarray) -> bytes:
     """
