@@ -80,6 +80,7 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
     rgb_frame = cv2.cvtColor(raw_frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
+    # Step 1: Detect Faces with MediaPipe (Fast)
     detection_result = detector.detect(mp_image)
     if detection_result.detections:
         for detection in detection_result.detections:
@@ -93,6 +94,14 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
 
             # Boundary safety: Prevent negative coordinates if face is at the edge
             x, y = max(0, x), max(0, y)
+
+            # Step 2: Recognize Faces (Slower)
+            # face_recognition format: [(top, right, bottom, left)]
+            face_location = [(y, x + w, y + h, x)]
+            current_encodings = face_recognition.face_encodings(rgb_frame, face_location)
+
+            name = "Unknown"
+
             cv2.rectangle(raw_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             
             # Add a temporary label to verify the detection loop is active
