@@ -1,0 +1,25 @@
+@keyframes slide-in {
+  from { transform: translateY(-20px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes pulse-border {
+  0%   { border-color: var(--signal-red); }
+  50%  { border-color: transparent;       }
+  100% { border-color: var(--signal-red); }
+}
+
+@keyframes flash-bg {
+  0%,
+  100% { background: rgba(239, 68, 68, 0.15); }
+  50%  { background: rgba(239, 68, 68, 0.25); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
