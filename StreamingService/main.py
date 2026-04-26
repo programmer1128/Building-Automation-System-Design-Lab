@@ -107,12 +107,13 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
                 if distances[best_match_idx] < 0.6:  # Lower is stricter
                     name = known_face_names[best_match_idx]
 
+            color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
             logger.info(f"Face: {name}")
-            cv2.rectangle(raw_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(raw_frame, (x, y), (x + w, y + h), color, 2)
             
             # Add a temporary label to verify the detection loop is active
             cv2.putText(raw_frame, "Face Detected", (x, y - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
     success, encoded_img = cv2.imencode('.jpg', raw_frame)
     if not success:
