@@ -101,7 +101,13 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
             current_encodings = face_recognition.face_encodings(rgb_frame, face_location)
 
             name = "Unknown"
+            if current_encodings and known_face_encodings:
+                distances = face_recognition.face_distance(known_face_encodings, current_encodings[0])
+                best_match_idx = np.argmin(distances)
+                if distances[best_match_idx] < 0.6:  # Lower is stricter
+                    name = known_face_names[best_match_idx]
 
+            logger.info(f"Face: {name}")
             cv2.rectangle(raw_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             
             # Add a temporary label to verify the detection loop is active
