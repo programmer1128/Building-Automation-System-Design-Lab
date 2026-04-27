@@ -111,8 +111,6 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
             cv2.rectangle(raw_frame, (x, y), (x + w, y + h), color, 2)
             cv2.putText(raw_frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
-    # 2. (Optional) Example: Add a simple text overlay
-    # cv2.putText(gray, "PROCESSED", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255), 2)
 
     success, encoded_img = cv2.imencode('.jpg', raw_frame)
     if not success:
@@ -130,6 +128,8 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
         return
 
     frame_count = 0
+    # skip every i frames
+    SKIP_I = 10
     # buffer to accumulate MJPEG frames
     buffer = b""
 
@@ -149,18 +149,19 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
 
                         if not jpg_data:
                             continue
+                        frame_count += 1
+                        if frame_count % SKIP_I == 0:
+                            # Decode the binary JPEG into a CV2-accessible array
+                            nparr = np.frombuffer(jpg_data, np.uint8)
+                            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                        # Decode the binary JPEG into a CV2-accessible array
-                        nparr = np.frombuffer(jpg_data, np.uint8)
-                        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                            if frame is not None:
+                                # Call our new processing skeleton
+                                processed_bytes = process_frame(frame)
 
-                        if frame is not None:
-                            # Call our new processing skeleton
-                            processed_bytes = process_frame(frame)
-
-                            if processed_bytes:
-                                await websocket.send_bytes(processed_bytes)
-                                await asyncio.sleep(0.01) # Small sleep for stability
+                                if processed_bytes:
+                                    await websocket.send_bytes(processed_bytes)
+                                    await asyncio.sleep(0.01) # Small sleep for stability
 
 
                     # Emergency buffer clear (5MB limit)
