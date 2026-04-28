@@ -1,14 +1,30 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, useColorScheme } from 'react-native';
 
+import { Picker } from '@react-native-picker/picker';
+import { useState } from 'react';
+import { View } from 'react-native';
 
-import { Text, View } from 'react-native';
-
+type CameraID = 'camera1' | 'camera2';
 
 export default function HomeScreen() {
+  const [camId, setCamId] = useState<CameraID>('camera1');
+  const theme = useColorScheme() ?? 'light';
 
   return (
     <View>
-       <Text>Camera mux</Text>
+       <Picker
+            selectedValue={camId}
+            onValueChange={(itemValue) => {
+              setCamId(itemValue as CameraID);
+              console.log("Camera id", itemValue)
+            }}
+            style={styles.picker}
+            itemStyle={styles.pickertext}
+            dropdownIconColor={theme === 'dark' ? '#fff' : '#000'}
+          >
+            <Picker.Item label="Living Room" value="camera1" />
+            <Picker.Item label="Bedroom" value="camera2" />
+          </Picker>
     </View>
   );
 }
@@ -30,4 +46,11 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
   },
+    picker: {
+    height: 50,
+    width: '100%',
+  },
+  pickertext: {
+    color: 'white'
+  }
 });
