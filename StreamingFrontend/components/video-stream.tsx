@@ -18,6 +18,21 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
 
     // 3. Initialize the connection
     ws.current = new WebSocket(socketUrl);
+    ws.current.binaryType = 'arraybuffer'; 
+
+    ws.current.onmessage = (event: MessageEvent) => {
+      try {
+        // Synchronous conversion from binary to base64 using Buffer
+        console.log("WS got message from backend")
+      } catch (e) {
+        console.error("Frame transformation error:", e);
+      }
+    };
+
+    ws.current.onerror = (e) => {
+      console.error("WebSocket Error:", e);
+    };
+
 
     // 4. Cleanup: Close the socket when the component unmounts or camId changes
     return () => {
