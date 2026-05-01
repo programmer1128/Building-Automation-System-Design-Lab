@@ -1,5 +1,5 @@
-import { ThemedText } from '@/components/themed-text';
 import { Buffer } from 'buffer';
+import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
@@ -53,7 +53,15 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
     <View style={styles.container}>
       <View style={styles.centered}>
         {imageUri ? (
-          <ThemedText style={styles.text}>Frame Received: Processing...</ThemedText>
+          <Image
+          style={styles.video}
+          source={{ uri: imageUri }}
+          contentFit="contain"
+          // Crucial: transition={0} removes the cross-fade animation that causes flickering
+          transition={0} 
+          // Prevents memory leaks by not caching thousands of individual stream frames
+          cachePolicy="none" 
+        />
         ) : (
           <ActivityIndicator size="large" color="#fff" />
         )}
