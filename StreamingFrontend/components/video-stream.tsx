@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
-import React, { useEffect, useRef } from 'react';
+import { Buffer } from 'buffer';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 // 1. Define the interface contract
@@ -8,6 +9,9 @@ interface VideoStreamProps {
 }
 
 const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
+
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   // 2. Return a placeholder UI to verify mounting
   const ws = useRef<WebSocket | null>(null);
 
@@ -24,6 +28,9 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
       try {
         // Synchronous conversion from binary to base64 using Buffer
         console.log("WS got message from backend")
+        // Synchronous conversion from binary to base64 using Buffer
+        const base64String = Buffer.from(event.data).toString('base64');
+        setImageUri(`data:image/jpeg;base64,${base64String}`);
       } catch (e) {
         console.error("Frame transformation error:", e);
       }
@@ -45,10 +52,11 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
   return (
     <View style={styles.container}>
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#fff" />
-        <ThemedText style={styles.text}>
-          Initializing stream for {camId}...
-        </ThemedText>
+        {imageUri ? (
+          <ThemedText style={styles.text}>Frame Received: Processing...</ThemedText>
+        ) : (
+          <ActivityIndicator size="large" color="#fff" />
+        )}
       </View>
     </View>
   );
@@ -63,6 +71,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
   },
   text: {
     color: '#fff',
