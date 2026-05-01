@@ -1,0 +1,13 @@
+# Node dependencies
+node_modules/
+Mobile App/node_modules/
+
+# Android/Gradle build files
+Mobile App/android/
+.gradle/
+build/
+
+# Expo and Editor specifics
+.expo/
+.vscode/
+*.lock
