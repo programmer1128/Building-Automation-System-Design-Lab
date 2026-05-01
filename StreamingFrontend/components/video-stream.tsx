@@ -2,6 +2,7 @@ import { Buffer } from 'buffer';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ThemedText } from './themed-text';
 
 // 1. Define the interface contract
 interface VideoStreamProps {
@@ -37,6 +38,7 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
     };
 
     ws.current.onerror = (e) => {
+      setError(`Connection failed for ${camId}`);
       console.error("WebSocket Error:", e);
     };
 
@@ -63,7 +65,12 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
           cachePolicy="none" 
         />
         ) : (
+          <View style={styles.centered}>
           <ActivityIndicator size="large" color="#fff" />
+          <ThemedText style={styles.text}>
+            {error || `Connecting to ${camId}...`}
+          </ThemedText>
+        </View>
         )}
       </View>
     </View>
