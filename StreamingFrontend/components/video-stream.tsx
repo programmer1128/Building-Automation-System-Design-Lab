@@ -1,33 +1,52 @@
 import { Buffer } from 'buffer';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, AppStateStatus, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
 
-// 1. Define the interface contract
 interface VideoStreamProps {
   camId: 'camera1' | 'camera2';
 }
 
 const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
 
+  const [appState, setAppState] = useState(AppState.currentState);
+
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 2. Return a placeholder UI to verify mounting
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // 2. Define connection parameters
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      setAppState(nextAppState);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const shouldConnect = appState === 'active';
+
+    if (!shouldConnect) {
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
+      return; 
+    }
+  }, [camId, appState]); 
+
+  useEffect(() => {
     const SERVER_IP = "10.168.237.229"; 
     const socketUrl = `ws://${SERVER_IP}:8000/ws/stream/${camId}`;
 
-    // 3. Initialize the connection
     ws.current = new WebSocket(socketUrl);
     ws.current.binaryType = 'arraybuffer'; 
 
     ws.current.onmessage = (event: MessageEvent) => {
       try {
-        // Synchronous conversion from binary to base64 using Buffer
         console.log("WS got message from backend")
         // Synchronous conversion from binary to base64 using Buffer
         const base64String = Buffer.from(event.data).toString('base64');
@@ -43,7 +62,6 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
     };
 
 
-    // 4. Cleanup: Close the socket when the component unmounts or camId changes
     return () => {
       if (ws.current) {
         ws.current.close();
