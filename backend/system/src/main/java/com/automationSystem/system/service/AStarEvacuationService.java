@@ -74,12 +74,13 @@ public class AStarEvacuationService
          return Collections.emptyList(); // No safe path found
     }
 
-    private int heuristic(int[] a, int[] b) 
+  
+      */
+       private int heuristic(int[] a, int[] b) 
     {
          //manhattan distance for grid-based building layouts
          return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
-      */
     
 
     private List<int[]> reconstructPath(Node node) 
