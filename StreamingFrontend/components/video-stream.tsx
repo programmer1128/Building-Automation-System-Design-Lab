@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import { Buffer } from 'buffer';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
@@ -11,7 +12,7 @@ interface VideoStreamProps {
 const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
 
   const [appState, setAppState] = useState(AppState.currentState);
-
+  const isFocused = useIsFocused();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
@@ -27,7 +28,7 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
   }, []);
 
   useEffect(() => {
-    const shouldConnect = appState === 'active';
+    const shouldConnect = isFocused && appState === 'active';
 
     if (!shouldConnect) {
       if (ws.current) {
@@ -36,7 +37,7 @@ const VideoStream: React.FC<VideoStreamProps> = ({ camId }) => {
       }
       return; 
     }
-  }, [camId, appState]); 
+  }, [camId, isFocused, appState]); 
 
   useEffect(() => {
     const SERVER_IP = "10.168.237.229"; 
