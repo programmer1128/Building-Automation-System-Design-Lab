@@ -7,7 +7,14 @@
 package com.automationSystem.system.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 ;
@@ -15,8 +22,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AStarEvacuationService 
 {
-     /*
-      public List<int[]> findPath(int[][] matrix, int[] start, int[] goal) 
+     public List<int[]> findPath(int[][] matrix, int[] start, int[] goal) 
      {
          int rows = matrix.length;
          int cols = matrix[0].length;
@@ -72,15 +78,13 @@ public class AStarEvacuationService
              }
          }
          return Collections.emptyList(); // No safe path found
-    }
+     }
 
-  
-      */
-       private int heuristic(int[] a, int[] b) 
-    {
+     private int heuristic(int[] a, int[] b) 
+     {
          //manhattan distance for grid-based building layouts
          return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
-    }
+     }
     
 
     private List<int[]> reconstructPath(Node node) 
