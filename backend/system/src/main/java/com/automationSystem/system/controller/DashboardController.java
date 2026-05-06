@@ -28,7 +28,7 @@ public class DashboardController {
     // Shared state variables (updated by your HardwareLinkService)
     public static double currentPower = 0.0;
     public static int[][] currentFloorMatrix = {
-        {3, 3, 3, 0, 2}, // Initial Floor (3=Path, 0=Wall, 2=Exit)
+        {3, 3, 3, 2, 2}, // Initial Floor (3=Path, 0=Wall, 2=Exit)
         {3, 0, 3, 3, 3},
         {3, 3, 3, 0, 3}
     };
