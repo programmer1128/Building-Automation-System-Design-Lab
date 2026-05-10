@@ -6,6 +6,7 @@ import httpx
 import cv2
 import numpy as np
 import mediapipe as mp
+import face_recognition
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,9 @@ DROIDCAM_URL = {
     'camera2': "http://192.168.0.116:4747/video",
     'camera1': "http://10.168.237.163:81/stream"
 }
+MODEL_DIR = "models/"
+FACE_DET_MODELS = ["blaze_face_short_range.tflite", "blaze_face_full_range.tflite", "blaze_face_full_range_sparse.tflite"]
+FACE_DET_MODEL_DIRS = list(map(lambda x: MODEL_DIR + x, FACE_DET_MODELS))
 
 app = FastAPI()
 
@@ -35,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 logger.info("CWD: " + os.getcwd())
 
-model_path = 'blaze_face_short_range.tflite'
+model_path = FACE_DET_MODEL_DIRS[0]
 BaseOptions = mp.tasks.BaseOptions
 FaceDetector = mp.tasks.vision.FaceDetector
 FaceDetectorOptions = mp.tasks.vision.FaceDetectorOptions
@@ -50,6 +54,25 @@ if options:
 
 detector = FaceDetector.create_from_options(options)
 
+# Face recognition in the works
+known_face_encodings = []
+known_face_names = []
+path = "known_faces"
+
+if os.path.exists(path):
+    logger.info(f"Directory exists!")
+    for file in os.listdir(path):
+        if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+            img = face_recognition.load_image_file(os.path.join(path, file))
+            encodings = face_recognition.face_encodings(img)
+            if encodings:
+                known_face_encodings.append(encodings[0])
+                known_face_names.append(os.path.splitext(file)[0])
+else:
+    logger.info(f"Warning: Directory {path} not found.\n")
+
+logger.info(known_face_names)
+
 def process_frame(raw_frame: np.ndarray) -> bytes:
     """
     Converts raw frame to rgb frame, runs the detection model on it, returns the processed image.
@@ -57,8 +80,38 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
     rgb_frame = cv2.cvtColor(raw_frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
+    # Step 1: Detect Faces with MediaPipe (Fast)
     detection_result = detector.detect(mp_image)
-    # TODO: Draw rectangles around detected faces
+    if detection_result.detections:
+        for detection in detection_result.detections:
+            bbox = detection.bounding_box
+            
+            # Extract x, y, width, and height as integers
+            x = int(bbox.origin_x)
+            y = int(bbox.origin_y)
+            w = int(bbox.width)
+            h = int(bbox.height)
+
+            # Boundary safety: Prevent negative coordinates if face is at the edge
+            x, y = max(0, x), max(0, y)
+
+            # Step 2: Recognize Faces (Slower)
+            # face_recognition format: [(top, right, bottom, left)]
+            face_location = [(y, x + w, y + h, x)]
+            current_encodings = face_recognition.face_encodings(rgb_frame, face_location)
+
+            name = "Unknown"
+            if current_encodings and known_face_encodings:
+                distances = face_recognition.face_distance(known_face_encodings, current_encodings[0])
+                best_match_idx = np.argmin(distances)
+                if distances[best_match_idx] < 0.6:  # Lower is stricter
+                    name = known_face_names[best_match_idx]
+
+            color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
+            cv2.rectangle(raw_frame, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(raw_frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+
+
     success, encoded_img = cv2.imencode('.jpg', raw_frame)
     if not success:
         return b""
@@ -75,6 +128,8 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
         return
 
     frame_count = 0
+    # skip every i frames
+    SKIP_I = 10
     # buffer to accumulate MJPEG frames
     buffer = b""
 
@@ -94,18 +149,19 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
 
                         if not jpg_data:
                             continue
+                        frame_count += 1
+                        if frame_count % SKIP_I == 0:
+                            # Decode the binary JPEG into a CV2-accessible array
+                            nparr = np.frombuffer(jpg_data, np.uint8)
+                            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                        # Decode the binary JPEG into a CV2-accessible array
-                        nparr = np.frombuffer(jpg_data, np.uint8)
-                        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                            if frame is not None:
+                                # Call our new processing skeleton
+                                processed_bytes = process_frame(frame)
 
-                        if frame is not None:
-                            # Call our new processing skeleton
-                            processed_bytes = process_frame(frame)
-
-                            if processed_bytes:
-                                await websocket.send_bytes(processed_bytes)
-                                await asyncio.sleep(0.01) # Small sleep for stability
+                                if processed_bytes:
+                                    await websocket.send_bytes(processed_bytes)
+                                    await asyncio.sleep(0.01) # Small sleep for stability
 
 
                     # Emergency buffer clear (5MB limit)
