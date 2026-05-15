@@ -85,8 +85,8 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // ALLOW BOTH PORTS: Simulator (3000) and Dashboard (3001)
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
+        // ALLOW ALL ORIGINS using a pattern wildcard to support credentials
+        configuration.setAllowedOriginPatterns(List.of("*"));
         
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
