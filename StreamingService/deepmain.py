@@ -6,15 +6,13 @@ import httpx
 import cv2
 import numpy as np
 import mediapipe as mp
-import face_recognition
+from deepface import DeepFace
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-NGROK_URL = "https://obvious-spotty-atop.ngrok-free.dev"
-
 DROIDCAM_URL = {
-    'camera2': f"{NGROK_URL}/video",
+    'camera2': "http://192.168.0.116:4747/video",
     'camera1': "http://10.168.237.163:81/stream"
 }
 MODEL_DIR = "models/"
@@ -57,6 +55,8 @@ if options:
 detector = FaceDetector.create_from_options(options)
 
 # Face recognition in the works
+RECOGNITION_MODEL = "Facenet"
+
 known_face_encodings = []
 known_face_names = []
 path = "known_faces"
@@ -65,11 +65,17 @@ if os.path.exists(path):
     logger.info(f"Directory exists!")
     for file in os.listdir(path):
         if file.lower().endswith(('.png', '.jpg', '.jpeg')):
-            img = face_recognition.load_image_file(os.path.join(path, file))
-            encodings = face_recognition.face_encodings(img)
-            if encodings:
-                known_face_encodings.append(encodings[0])
-                known_face_names.append(os.path.splitext(file)[0])
+            file_path = os.path.join(path, file)
+            try:
+                # DeepFace.represent returns a list of dictionaries (one for each face found)
+                embeddings = DeepFace.represent(img_path=file_path, 
+                                                model_name=RECOGNITION_MODEL, 
+                                                enforce_detection=False)
+                if embeddings:
+                    known_face_encodings.append(embeddings[0]["embedding"])
+                    known_face_names.append(os.path.splitext(file)[0])
+            except Exception as e:
+                logger.error(f"Error encoding {file}: {e}")
 else:
     logger.info(f"Warning: Directory {path} not found.\n")
 
@@ -79,6 +85,7 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
     """
     Converts raw frame to rgb frame, runs the detection model on it, returns the processed image.
     """
+    img_h, img_w, _ = raw_frame.shape
     rgb_frame = cv2.cvtColor(raw_frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
@@ -94,31 +101,55 @@ def process_frame(raw_frame: np.ndarray) -> bytes:
             w = int(bbox.width)
             h = int(bbox.height)
 
-            # Boundary safety: Prevent negative coordinates if face is at the edge
-            x, y = max(0, x), max(0, y)
+            # --- Added Padding Logic ---
+            # Facenet requires surrounding context (hair, chin, ears) to generate robust embeddings.
+            # MediaPipe's bounding boxes are natively too tight.
+            pad_w = int(w * 0.25)
+            pad_h = int(h * 0.25)
 
-            # Step 2: Recognize Faces (Slower)
-            # face_recognition format: [(top, right, bottom, left)]
-            face_location = [(y, x + w, y + h, x)]
-            current_encodings = face_recognition.face_encodings(rgb_frame, face_location)
+            # Apply padding bounds check to guarantee we don't slice outside the frame boundaries
+            x_start = max(0, x - pad_w)
+            y_start = max(0, y - pad_h)
+            x_end = min(img_w, x + w + pad_w)
+            y_end = min(img_h, y + h + pad_h)
 
+            # Slice the expanded region for the face recognition pipeline
+            face_img = rgb_frame[y_start:y_end, x_start:x_end]
+            
             name = "Unknown"
-            if current_encodings and known_face_encodings:
-                distances = face_recognition.face_distance(known_face_encodings, current_encodings[0])
-                best_match_idx = np.argmin(distances)
-                if distances[best_match_idx] < 0.6:  # Lower is stricter
-                    name = known_face_names[best_match_idx]
+            if face_img.size > 0 and known_face_encodings:
+                try:
+                    # Get encoding for the current detected face
+                    # detector_backend='skip' because we already cropped using MediaPipe
+                    current_repr = DeepFace.represent(img_path=face_img, 
+                                                      model_name=RECOGNITION_MODEL, 
+                                                      enforce_detection=False,
+                                                      detector_backend='skip')
+                    
+                    if current_repr:
+                        encoding = current_repr[0]["embedding"]
+                        
+                        # Calculate Cosine Distances manually (DeepFace style)
+                        # Higher value means less similarity
+                        distances = []
+                        for known_enc in known_face_encodings:
+                            # Cosine distance logic
+                            dist = np.dot(known_enc, encoding) / (np.linalg.norm(known_enc) * np.linalg.norm(encoding))
+                            distances.append(1 - dist) # Convert to distance
+
+                        best_match_idx = np.argmin(distances)
+                        # Threshold for Facenet is usually around 0.40 for Cosine
+                        if distances[best_match_idx] < 0.6:  
+                            name = known_face_names[best_match_idx]
+                except Exception as e:
+                    logger.error(f"Recognition error: {e}")
 
             color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
             cv2.rectangle(raw_frame, (x, y), (x + w, y + h), color, 2)
             cv2.putText(raw_frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
-
     success, encoded_img = cv2.imencode('.jpg', raw_frame)
-    if not success:
-        return b""
-
-    return encoded_img.tobytes()
+    return encoded_img.tobytes() if success else b""
 
 @app.websocket("/ws/stream/{cam_id}")
 async def websocket_endpoint(websocket: WebSocket, cam_id: str):
@@ -137,7 +168,7 @@ async def websocket_endpoint(websocket: WebSocket, cam_id: str):
 
     async with httpx.AsyncClient() as client:
         try:
-            async with client.stream("GET", target_url, headers={"ngrok-skip-browser-warning": "true"}, timeout=None) as response:
+            async with client.stream("GET", target_url, timeout=None) as response:
                 async for chunk in response.aiter_bytes():
                     buffer += chunk
                     
